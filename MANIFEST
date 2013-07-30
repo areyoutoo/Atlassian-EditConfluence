@@ -4,3 +4,5 @@ MANIFEST
 README
 t/00_compile.t
 t/01_constructor.t
+t/02_encoding.t
+t/10_connect.t
