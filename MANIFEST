@@ -1,0 +1,5 @@
+lib/Atlassian/EditConfluence.pm
+Makefile.PL
+MANIFEST
+README
+t/00_compile.t
