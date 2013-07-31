@@ -1,16 +1,12 @@
 use Test::More;
 use Test::Exception;
 
-# BEGIN {
-	# use_ok('Atlassian::EditConfluence');
-# }
-
 
 my $FILENAME = 'credentials.txt';
 if (not -e $FILENAME) {
 	plan skip_all => "Tests irrelevant without $FILENAME";
 } else {
-	plan tests => 10;
+	plan tests => 13;
 	
 	require_ok('Atlassian::EditConfluence');
 	
@@ -24,6 +20,7 @@ if (not -e $FILENAME) {
 		die "Invalid $FILENAME";
 	}
 	
+	#call constructor
 	my $editor;
 	lives_ok {
 		$editor = Atlassian::EditConfluence->new({
@@ -35,11 +32,23 @@ if (not -e $FILENAME) {
 	
 	isa_ok($editor, 'Atlassian::EditConfluence', 'type');
 	
-	is($editor->api, $Atlassian::EditConfluence::DEFAULT_API, 'api');
-	isa_ok($editor->client, 'RPC::XML::Client', 'client');
-	is($editor->defaultSummary, $Atlassian::EditConfluence::DEFAULT_SUMMARY, 'defaultSummary');
-	is($editor->defaultMinor, $Atlassian::EditConfluence::DEFAULT_MINOR, 'defaultMinor');
-	is($editor->defaultSpace, '', 'defaultSpace');
-	is($editor->errstr, undef, 'errstr');
-	isnt($editor->token, undef, 'token');
+	is($editor->api, $Atlassian::EditConfluence::DEFAULT_API, 'get api');
+	isa_ok($editor->client, 'RPC::XML::Client', 'get client');
+	is($editor->defaultSummary, $Atlassian::EditConfluence::DEFAULT_SUMMARY, 'get defaultSummary');
+	is($editor->defaultMinor, $Atlassian::EditConfluence::DEFAULT_MINOR, 'get defaultMinor');
+	is($editor->defaultSpace, '', 'get defaultSpace');
+	is($editor->errstr, undef, 'get errstr');
+	isnt($editor->token, undef, 'get token');
+	
+	my $newDefaultSum = $Atlassian::EditConfluence::DEFAULT_SUMMARY . ' testsummary123';
+	$editor->defaultSummary($newDefaultSum);
+	is($editor->defaultSummary, $newDefaultSum, 'set defaultSummary');
+	
+	my $newDefaultMinor = $Atlassian::EditConfluence::DEFAULT_MINOR eq 'true' ? 'false' : 'true';
+	$editor->defaultMinor($newDefaultMinor);
+	is($editor->defaultMinor, $newDefaultMinor, 'set defaultMinor');
+	
+	my $newDefaultSpace = 'testspace123';
+	$editor->defaultSpace($newDefaultSpace);
+	is($editor->defaultSpace, $newDefaultSpace, 'set DefaultSpace');
 }

@@ -50,9 +50,18 @@ dies_ok {
 } 'constructor username-password';
 
 dies_ok {
-	Atlassian::EditConfulence->new(
+	Atlassian::EditConfluence->new(
 		'http://google.com',
 		'foo',
 		'secret',
 	);
 } 'constructor odd args';
+
+#TODO: set up testing with a local RPC server?
+# lives_ok {
+	# Atlassian::EditConfluence->new(
+		# username => 'foo',
+		# password => 'secret',
+		# url => 'http://google.com'
+	# );
+# }
