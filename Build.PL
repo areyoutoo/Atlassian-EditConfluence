@@ -10,6 +10,9 @@ my $build = Module::Build->new(
 	requires => {
 		'RPC::XML'         => 1.56, #TODO: is an earlier version okay?
 		'RPC::XML::Client' => 1.4, #TODO: is an earlier version okay?
+		'Carp'             => 0,
+		'fields'           => 0,
+		'strict'           => 0,
 	},
 	
 	test_requires => {
