@@ -6,12 +6,13 @@ use sigtrap 'handler' => sub { exit 0; }, 'INT';
 
 
 if (eval 'require RPC::XML::Server; 1;') {
+	require t::lib::TestServer;
+	
 	my $pid = fork();
 	if ($pid) {
 		runTests();
 		kill 'INT', $pid;
 	} else {
-		require t::lib::TestServer;
 		t::lib::TestServer->run();
 	}
 } else {
