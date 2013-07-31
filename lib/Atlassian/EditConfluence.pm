@@ -229,7 +229,7 @@ sub call {
 	unshift @args, $self->token unless $function eq 'login';
 	
 	#api call
-	my $response = $self->client->simple_request("$self->{api}.$function", @args) or croak "Failed to call '$function': $RPC::XML::ERROR";
+	my $response = $self->client->simple_request("$self->{api}.$function", @args) or croak "Failed to call '$function' [$RPC::XML::ERROR]";
 	
 	#error responses are a hash containing 'faultCode' and 'faultString'
 	if (ref $response eq 'HASH' && exists $response->{faultString}) {
