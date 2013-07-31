@@ -17,8 +17,6 @@ use RPC::XML::Client;
 #Define acceptable object fields
 use fields qw/
 	api
-	cachedUserGroups
-	cachedUsernames
 	cachedPageTitles
 	client
 	errstr
@@ -64,8 +62,12 @@ sub new {
 	my $arg = _hash(@_);
 	
 	my $url = $arg->{url} or croak 'Needs URL';
-	my $username = $arg->{username} or croak 'Needs username';
-	my $password = $arg->{password} or croak 'Needs password';
+	my $noconnect = $arg->{noconnect};
+	
+	unless ($noconnect) {
+		my $username = $arg->{username} or croak 'Needs username';
+		my $password = $arg->{password} or croak 'Needs password';
+	}
 	
 	#configure RPC::XML::Client
 	$self->{client} = RPC::XML::Client->new($url) or die 'Failed to create RPC::XML::Client';
@@ -77,13 +79,8 @@ sub new {
 	$self->defaultSpace($arg->{defaultSpace} // $DEFAULT_SPACE);
 	$self->defaultSummary($arg->{defaultSummary} // $DEFAULT_SUMMARY);
 	
-	#init empty caches
-	$self->{cachedPageTitles} = {};
-	$self->{cachedUserGroups} = {};
-	$self->{cachedUsernames}  = {};
-	
 	#login call
-	$self->token($self->call('login', $username, $password));
+	$self->login($arg) unless $noconnect;
 	
 	return $self;
 }
@@ -246,6 +243,19 @@ sub call {
 ######################
 ## SESSION API CALLS
 ######################
+
+sub login {
+	my $self = shift;
+	confess 'Not a static method' unless ref $self eq __PACKAGE__;
+	
+	my $arg = _hash(@_);
+	my $username = $arg->{username} or croak 'Needs username';
+	my $password = $arg->{password} or croak 'Needs password';
+	
+	$self->token($self->call('login', $username, $password));
+	
+	return $self->token;
+}
 
 sub logout {
 	my $self = shift;
