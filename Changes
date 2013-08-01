@@ -1,0 +1,12 @@
+Atlassian-EditConfluence
+
+[0.02] TBA
+
+	- Significant testing enhancements
+	- Testing now includes an embedded RPC::XML::Server instance
+	- Build now uses Module::Build instead of ExtUtils::MakeMaker
+
+
+[0.01] 30 July 2013
+
+	- Initial build.

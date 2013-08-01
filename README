@@ -1,5 +1,7 @@
 Atlassian-EditConfluence
 
+Edit Confluence wikis using Perl!
+
 
 To install this module, run the following commands:
 
@@ -7,3 +9,20 @@ To install this module, run the following commands:
 	Build
 	Build test
 	Build install
+
+
+Usage:
+
+	use Atlassian::EditConfluence;
+	
+	my $editor = Atlassian::EditConfluence->new(
+		url => 'https://your.wiki.url/confluence/rpc/xmlrpc',
+		username => 'user123',
+		password => 'my secret password',
+	);
+	
+	$editor->editOrCreatePage(
+		spaceKey => 'Department12',
+		pageTitle => 'Sandbox',
+		content => 'It works!',
+	);
