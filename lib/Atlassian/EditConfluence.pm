@@ -1,7 +1,7 @@
 package Atlassian::EditConfluence;
+use Scalar::Util qw(blessed);
 
-our
-$VERSION = 0.01;
+our $VERSION = 0.02;
 
 
 ############
@@ -17,14 +17,13 @@ use RPC::XML::Client;
 #Define acceptable object fields
 use fields qw/
 	api
-	cachedUserGroups
-	cachedUsernames
 	cachedPageTitles
 	client
 	errstr
 	defaultMinor
 	defaultSpace
 	defaultSummary
+	specialSend
 	token
 	trace
 /;
@@ -45,9 +44,12 @@ our $DEFAULT_MINOR   = 'false';
 our $DEFAULT_SUMMARY = "BOT edit using $DEFAULT_AGENT";
 our $DEFAULT_SPACE   = '';
 
-our $ERROR_WARN      = 1;
 our $ERROR_DIE       = 0;
+our $ERROR_WARN      = 1;
+our $FAULT_DIE       = 1;
+our $FAULT_WARN      = 1;
 our $TRACE           = 0;
+
 
 
 ################
@@ -64,8 +66,12 @@ sub new {
 	my $arg = _hash(@_);
 	
 	my $url = $arg->{url} or croak 'Needs URL';
-	my $username = $arg->{username} or croak 'Needs username';
-	my $password = $arg->{password} or croak 'Needs password';
+	my $noconnect = $arg->{noconnect};
+	
+	unless ($noconnect) {
+		my $username = $arg->{username} or croak 'Needs username';
+		my $password = $arg->{password} or croak 'Needs password';
+	}
 	
 	#configure RPC::XML::Client
 	$self->{client} = RPC::XML::Client->new($url) or die 'Failed to create RPC::XML::Client';
@@ -76,14 +82,10 @@ sub new {
 	$self->defaultMinor($arg->{defaultMinor} // $DEFAULT_MINOR);
 	$self->defaultSpace($arg->{defaultSpace} // $DEFAULT_SPACE);
 	$self->defaultSummary($arg->{defaultSummary} // $DEFAULT_SUMMARY);
-	
-	#init empty caches
-	$self->{cachedPageTitles} = {};
-	$self->{cachedUserGroups} = {};
-	$self->{cachedUsernames}  = {};
+	$self->{specialSend} = $arg->{specialSend} if exists $arg->{specialSend};
 	
 	#login call
-	$self->token($self->call('login', $username, $password));
+	$self->login($arg) unless $noconnect;
 	
 	return $self;
 }
@@ -161,6 +163,17 @@ sub token {
 ## INTERNAL CALLS
 ###################
 
+sub _send {
+	my $self = shift;
+	my $request = shift;
+	
+	if (exists $self->{specialSend}) {
+		return $self->{specialSend}->($request)->value;
+	} else {
+		return $self->client->simple_request($request);
+	}
+}
+
 #If we get an array that looks like a hash, convert it to a hashref
 #If we get a hash, pass it through
 #Otherwise, cry on home
@@ -227,16 +240,27 @@ sub call {
 	
 	carp "Calling '$function'" if $TRACE;
 	
+	#encode args
+	# @args = RPC::XML->smart_encode(@args);
+	
 	#calls other than login require an initial "token" param
 	#TODO: do any other functions omit the token param? grep against a list?
 	unshift @args, $self->token unless $function eq 'login';
+
+	#build and send request
+	my $request = RPC::XML::request->new("$self->{api}.$function", @args) or croak "Failed to build request for '$function'";
+	my $response = $self->_send($request) or croak "Failed to send '$function' [$RPC::XML::ERROR]";
 	
-	#api call
-	my $response = $self->client->simple_request("$self->{api}.$function", @args) or croak "Failed to call '$function': $RPC::XML::ERROR";
+	#convert RPC::XML::response values back to Perl
+	if (blessed($response) && $response->isa('RPC::XML::datatype')) {
+		$response = $response->value();
+	}
 	
 	#error responses are a hash containing 'faultCode' and 'faultString'
 	if (ref $response eq 'HASH' && exists $response->{faultString}) {
-		croak "Error calling '$function': $response->{faultString}";
+		$self->errstr("Fault calling '$function': $response->{faultString}");
+		croak $self->errstr if $FAULT_DIE;
+		carp $self->errstr if $FAULT_WARN;
 	}
 	
 	return $response;
@@ -246,6 +270,25 @@ sub call {
 ######################
 ## SESSION API CALLS
 ######################
+
+sub login {
+	my $self = shift;
+	confess 'Not a static method' unless ref $self eq __PACKAGE__;
+	
+	my $arg = _hash(@_);
+	my $username = $arg->{username} or croak 'Needs username';
+	my $password = $arg->{password} or croak 'Needs password';
+	
+	$self->token($self->call('login', $username, $password));
+	
+	unless ($self->token) {
+		$self->errstr("Failed login (bad credentials?)");
+		croak $self->errstr if $ERROR_DIE || $FAULT_DIE;
+		carp $self->errstr if $ERROR_WARN || $FAULT_WARN;
+	}
+	
+	return $self->token;
+}
 
 sub logout {
 	my $self = shift;
