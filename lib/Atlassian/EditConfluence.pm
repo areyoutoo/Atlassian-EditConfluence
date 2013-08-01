@@ -1,4 +1,5 @@
 package Atlassian::EditConfluence;
+use Scalar::Util qw(blessed);
 
 our $VERSION = 0.02;
 
@@ -43,9 +44,12 @@ our $DEFAULT_MINOR   = 'false';
 our $DEFAULT_SUMMARY = "BOT edit using $DEFAULT_AGENT";
 our $DEFAULT_SPACE   = '';
 
-our $ERROR_WARN      = 1;
 our $ERROR_DIE       = 0;
+our $ERROR_WARN      = 1;
+our $FAULT_DIE       = 1;
+our $FAULT_WARN      = 1;
 our $TRACE           = 0;
+
 
 
 ################
@@ -164,7 +168,7 @@ sub _send {
 	my $request = shift;
 	
 	if (exists $self->{specialSend}) {
-		return $self->{specialSend}->($request);
+		return $self->{specialSend}->($request)->value;
 	} else {
 		return $self->client->simple_request($request);
 	}
@@ -236,19 +240,27 @@ sub call {
 	
 	carp "Calling '$function'" if $TRACE;
 	
+	#encode args
+	# @args = RPC::XML->smart_encode(@args);
+	
 	#calls other than login require an initial "token" param
 	#TODO: do any other functions omit the token param? grep against a list?
 	unshift @args, $self->token unless $function eq 'login';
-	
-	#build request
-	RPC::XML->smart_encode(@args);
+
+	#build and send request
 	my $request = RPC::XML::request->new("$self->{api}.$function", @args) or croak "Failed to build request for '$function'";
 	my $response = $self->_send($request) or croak "Failed to send '$function' [$RPC::XML::ERROR]";
-	# my $response = $self->client->simple_request("$self->{api}.$function", @args) or croak "Failed to call '$function' [$RPC::XML::ERROR]";
+	
+	#convert RPC::XML::response values back to Perl
+	if (blessed($response) && $response->isa('RPC::XML::datatype')) {
+		$response = $response->value();
+	}
 	
 	#error responses are a hash containing 'faultCode' and 'faultString'
 	if (ref $response eq 'HASH' && exists $response->{faultString}) {
-		croak "Error calling '$function': $response->{faultString}";
+		$self->errstr("Fault calling '$function': $response->{faultString}");
+		croak $self->errstr if $FAULT_DIE;
+		carp $self->errstr if $FAULT_WARN;
 	}
 	
 	return $response;

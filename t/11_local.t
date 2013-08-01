@@ -20,8 +20,8 @@ sub runTests {
 	subtest 'constructor' => sub {
 		lives_ok {
 			$editor = Atlassian::EditConfluence->new({
-				username => 'username',
-				password => 'password',
+				username => $t::lib::TestServer::USER,
+				password => $t::lib::TestServer::PASS,
 				url => 'http://localhost:9000',
 				specialSend => sub {
 					t::lib::TestServer->dispatch(@_);
@@ -38,7 +38,7 @@ sub runTests {
 		is($editor->defaultMinor, $Atlassian::EditConfluence::DEFAULT_MINOR, 'get defaultMinor');
 		is($editor->defaultSpace, '', 'get defaultSpace');
 		is($editor->errstr, undef, 'get errstr');
-		isnt($editor->token, undef, 'get token');
+		is($editor->token, $t::lib::TestServer::TOKEN, 'get token');
 	};
 	
 	subtest 'setters' => sub {	
