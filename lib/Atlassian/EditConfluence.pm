@@ -1,7 +1,6 @@
 package Atlassian::EditConfluence;
 
-our
-$VERSION = 0.01;
+our $VERSION = 0.02;
 
 
 ############
@@ -13,7 +12,6 @@ use Carp;
 
 use RPC::XML;
 use RPC::XML::Client;
-# use RPC::XML::request;
 
 #Define acceptable object fields
 use fields qw/
