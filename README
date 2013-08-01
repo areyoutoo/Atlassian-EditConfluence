@@ -5,7 +5,7 @@ Edit Confluence wikis using Perl!
 
 To install this module, run the following commands:
 
-    perl Build.PL
+	perl Build.PL
 	Build
 	Build test
 	Build install
