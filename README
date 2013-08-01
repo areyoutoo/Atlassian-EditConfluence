@@ -16,7 +16,7 @@ Usage:
 	use Atlassian::EditConfluence;
 	
 	my $editor = Atlassian::EditConfluence->new(
-		url => 'https://your.wiki.url/confluence/rpc/xmlrpc',
+		url => 'https://your.wiki.url/rpc/xmlrpc',
 		username => 'user123',
 		password => 'my secret password',
 	);
@@ -26,3 +26,8 @@ Usage:
 		pageTitle => 'Sandbox',
 		content => 'It works!',
 	);
+
+
+Read more about the Confluence API here: 
+
+https://developer.atlassian.com/display/CONFDEV/Confluence+XML-RPC+and+SOAP+APIs
