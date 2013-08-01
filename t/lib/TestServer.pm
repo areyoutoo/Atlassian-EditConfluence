@@ -6,7 +6,7 @@ use RPC::XML;
 use RPC::XML::Server;
 
 my $server = RPC::XML::Server->new(
-	port => 9000
+	no_http => 1,
 );
 
 $server->add_procedure({
@@ -15,15 +15,15 @@ $server->add_procedure({
 	code => sub { return 'token'; },
 });
 
-run() if scalar @ARGV;
+$server->add_procedure({
+	name => 'confluence1.logout',
+	signature => ['nil string'],
+	code => sub { return ''; },
+});
 
-sub run {
-	$server->server_loop(
-		signal => 'INT'
-	);
-	close STDOUT;
-	close STDERR;
-	# exit 0;
+sub dispatch {
+	my $request = shift;
+	return $server->dispatch($request);
 }
 
 1;

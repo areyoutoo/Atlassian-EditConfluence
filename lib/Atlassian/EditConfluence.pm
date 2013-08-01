@@ -13,6 +13,7 @@ use Carp;
 
 use RPC::XML;
 use RPC::XML::Client;
+# use RPC::XML::request;
 
 #Define acceptable object fields
 use fields qw/
@@ -23,6 +24,7 @@ use fields qw/
 	defaultMinor
 	defaultSpace
 	defaultSummary
+	specialSend
 	token
 	trace
 /;
@@ -78,6 +80,7 @@ sub new {
 	$self->defaultMinor($arg->{defaultMinor} // $DEFAULT_MINOR);
 	$self->defaultSpace($arg->{defaultSpace} // $DEFAULT_SPACE);
 	$self->defaultSummary($arg->{defaultSummary} // $DEFAULT_SUMMARY);
+	$self->{specialSend} = $arg->{specialSend} if exists $arg->{specialSend};
 	
 	#login call
 	$self->login($arg) unless $noconnect;
@@ -158,6 +161,17 @@ sub token {
 ## INTERNAL CALLS
 ###################
 
+sub _send {
+	my $self = shift;
+	my $request = shift;
+	
+	if (exists $self->{specialSend}) {
+		return $self->{specialSend}->($request);
+	} else {
+		return $self->client->simple_request($request);
+	}
+}
+
 #If we get an array that looks like a hash, convert it to a hashref
 #If we get a hash, pass it through
 #Otherwise, cry on home
@@ -228,8 +242,11 @@ sub call {
 	#TODO: do any other functions omit the token param? grep against a list?
 	unshift @args, $self->token unless $function eq 'login';
 	
-	#api call
-	my $response = $self->client->simple_request("$self->{api}.$function", @args) or croak "Failed to call '$function' [$RPC::XML::ERROR]";
+	#build request
+	RPC::XML->smart_encode(@args);
+	my $request = RPC::XML::request->new("$self->{api}.$function", @args) or croak "Failed to build request for '$function'";
+	my $response = $self->_send($request) or croak "Failed to send '$function' [$RPC::XML::ERROR]";
+	# my $response = $self->client->simple_request("$self->{api}.$function", @args) or croak "Failed to call '$function' [$RPC::XML::ERROR]";
 	
 	#error responses are a hash containing 'faultCode' and 'faultString'
 	if (ref $response eq 'HASH' && exists $response->{faultString}) {
