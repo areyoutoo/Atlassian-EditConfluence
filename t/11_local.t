@@ -14,7 +14,7 @@ sub runTests {
 	require t::lib::TestServer;
 	require Atlassian::EditConfluence;
 	
-	plan tests => 3;
+	plan tests => 4;
 	
 	my $editor;
 	subtest 'constructor' => sub {
@@ -29,6 +29,19 @@ sub runTests {
 			});
 		} 'connect';
 		isa_ok($editor, 'Atlassian::EditConfluence', 'type');
+	};
+	
+	subtest 'die on fault' => sub {
+		dies_ok {
+			Atlassian::EditConfluence->new({
+				username => $t::lib::TestServer::USER,
+				password => $t::lib::TestServer::PASS . 'badpass',
+				url => 'http://localhost:9000',
+				specialSend => sub {
+					t::lib::TestServer->dispatch(@_);
+				}
+			});
+		};
 	};
 	
 	subtest 'getters' => sub {	

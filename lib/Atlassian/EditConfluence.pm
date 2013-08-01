@@ -281,6 +281,12 @@ sub login {
 	
 	$self->token($self->call('login', $username, $password));
 	
+	unless ($self->token) {
+		$self->errstr("Failed login (bad credentials?)");
+		croak $self->errstr if $ERROR_DIE || $FAULT_DIE;
+		carp $self->errstr if $ERROR_WARN || $FAULT_WARN;
+	}
+	
 	return $self->token;
 }
 
