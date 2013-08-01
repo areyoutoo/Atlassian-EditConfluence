@@ -1,7 +1,28 @@
 package Atlassian::EditConfluence;
-use Scalar::Util qw(blessed);
 
-our $VERSION = 0.02;
+=head1 NAME
+
+Atlassian::EditConfluence - Edit Confluence wikis in Perl!
+
+=head1 SYNOPSIS
+
+	use Atlassian::EditConfluence;
+	
+	my $editor = Atlassian::EditConfluence->new(
+		url => 'https://your.wiki.url/rpc/xmlrpc',
+		username => 'user123',
+		password => 'my secret password',
+	);
+	
+	$editor->editOrCreatePage(
+		spaceKey => 'Department12',
+		pageTitle => 'Sandbox',
+		content => 'It works!',
+	);
+
+=cut
+
+our $VERSION = 0.02_01;
 
 
 ############
@@ -13,6 +34,8 @@ use Carp;
 
 use RPC::XML;
 use RPC::XML::Client;
+
+use Scalar::Util qw(blessed);
 
 #Define acceptable object fields
 use fields qw/
@@ -51,10 +74,51 @@ our $FAULT_WARN      = 1;
 our $TRACE           = 0;
 
 
+=head1 METHODS
+
+Unless otherwise specified, API call methods accept a hash or hashref argument.
+
+C<call> is probably the only method that accepts an array of arguments, 
+representing the ordered arguments for a direct API call.
+
+Getters need no argument, and become setters if an argument is passed.
+
+=cut
 
 ################
 ## CONSTRUCTOR
 ################
+
+
+=head2 new(HASH)
+
+Main arguments:
+
+=over 4
+
+=item * B<username>: API username
+
+=item * B<password>: API password
+
+=item * B<url>: API URL, such as C<'http://your.wiki.domain/rpc/xmlrpc'>
+
+=back
+
+
+Optional arguments:
+
+=over 4
+
+=item * B<noconnect>: If true, skip login during constructor. You 
+can call it manually, later, or provide your own session token.
+
+=item * B<agent>: User-agent string for L<RPC::XML::Client>'s underlying L<LWP::UserAgent> object. Note that LWP prefers an agent string which ends with a space. Defaults to C<$DEFAULT_AGENT> if not provided.
+
+You can also specify C<defaultMinor>, C<defaultSpace> and C<defaultSummary> at this time by passing values for those keys.
+
+=back
+
+=cut
 
 sub new {
 	#create new object
@@ -95,6 +159,18 @@ sub new {
 ## GETTERS AND SETTERS
 ########################
 
+=head2 GETTERS AND SETTERS
+
+=head3 api
+
+=over 4
+
+Gets or sets the API version prefix. Default is C<'confluence1'>.
+
+=back
+
+=cut
+
 #API prefix, prepended to function call names
 #ie: 'login' becomes 'confluence1.login'
 sub api {
@@ -102,6 +178,18 @@ sub api {
 	$self->{api} = $api if defined $api;
 	return $self->{api};
 }
+
+=head3 client
+
+=over 4
+
+Allows access to the underlying L<RPC::XML::Client> object. If you're using 
+this module, it's probably so that you I<don't> have to work at that level of 
+detail.
+
+=back
+
+=cut
 
 #Underlying RPC::XML::Client handler
 #Analogous to the underlying agent in WWW::Mechanize
@@ -114,6 +202,16 @@ sub client {
 	return $self->{client};
 }
 
+=head3 defaultMinor
+
+=over 4
+
+Mark edits as minor? Should be C<'true'> or C<'false'>. Defaults to C<'false'>.
+
+=back
+
+=cut
+
 #Mark edits as minor changes?
 sub defaultMinor {
 	my ($self, $defaultMinor)  = @_;
@@ -124,6 +222,18 @@ sub defaultMinor {
 	return $self->{defaultMinor};
 }
 
+=head3 defaultSpace
+
+=over 4
+
+Specify a C<defaultSpace> if you want to skip specifying one on every API 
+call. Will be used in place of C<spaceKey> arguments as needed. Defaults to 
+C<''>.
+
+=back
+
+=cut
+
 #Default space to be used for page operations
 sub defaultSpace {
 	my ($self, $defaultSpace) = @_;
@@ -131,12 +241,33 @@ sub defaultSpace {
 	return $self->{defaultSpace};
 }
 
+=head3 defaultSummary
+
+=over 4
+
+Automatically applied to edits when no other change summary is provided. 
+Defaults to C<$DEFAULT_SUMMARY>.
+
+=back
+
+=cut
+
 #Default edit summary, used if none is provided
 sub defaultSummary {
 	my ($self, $defaultSummary) = @_;
 	$self->{defaultSummary} = $defaultSummary if defined $defaultSummary;
 	return $self->{defaultSummary};
 }
+
+=head3 errstr
+
+=over 4
+
+Will be set each time an API call encounters a client error or server fault.
+
+=back
+
+=cut
 
 #Error string
 sub errstr {
@@ -146,10 +277,23 @@ sub errstr {
 }
 
 #Reset errstr
-sub resetErr {
+sub _resetErr {
 	my $self = shift;
 	$self->{errstr} = undef;
 }
+
+=head3 token
+
+=over 4
+
+Get or set the API auth token. Could be used to provide another bot with our 
+login session, or use another pre-authed session.
+
+Usually, you'll want to set this by calling C<login>.
+
+=back
+
+=cut
 
 #API session token
 sub token {
@@ -229,6 +373,26 @@ sub _userGroupIsCached {
 ## DIRECT API CALLS
 #####################
 
+=head2 call(function, LIST)
+
+=over 4
+
+Direct API call. Used internally for all calls. You can use it to access 
+functions not yet implemented in this client.
+
+The first argument is the name of the function to call. All other arguments 
+are arguments to the function. You do not need to provide the I<token> 
+argument that is expected by most functions. It will be prepended 
+automatically.
+
+This will return whatever we get back from the server, usually a hash. If 
+C<$FAULT_DIE> or C<$FAULT_WARN> are true, will automatically detect faults 
+and react accordingly.
+
+=back
+
+=cut
+
 #Bare call to Confluence API
 #Automatically prepends token to arg list when needed
 #ie: $editor->call('login', 'username', 'password');
@@ -271,6 +435,19 @@ sub call {
 ## SESSION API CALLS
 ######################
 
+=head2 SESSION CALLS
+
+=head3 login(username, password)
+
+=over 4
+
+Attempts to login. Automatically called by the constructor unless otherwise 
+requested.
+
+=back
+
+=cut
+
 sub login {
 	my $self = shift;
 	confess 'Not a static method' unless ref $self eq __PACKAGE__;
@@ -290,6 +467,16 @@ sub login {
 	return $self->token;
 }
 
+=head3 logout
+
+=over 4
+
+Ends your session.
+
+=back
+
+=cut
+
 sub logout {
 	my $self = shift;
 	confess 'Not a static method' unless ref $self eq __PACKAGE__;
@@ -300,6 +487,20 @@ sub logout {
 ######################
 ## PAGE API CALLS
 ######################
+
+=head2 PAGE CALLS
+
+=head3 pageExists
+
+=over 4
+
+Needs a spaceKey and pageTitle. Checks if a page exists.
+
+Returns non-zero if the page exists.
+
+=back
+
+=cut
 
 sub pageExists {
 	my $self = shift;
@@ -317,6 +518,19 @@ sub pageExists {
 	}
 }
 
+=head3 getPage
+
+=over 4
+
+Wrapper for C<getPage(token,space,page)>. Needs spaceKey and pageTitle.
+
+Attempts to return the page from the server. If no such page exists, it will 
+either die or return undef depending on C<$ERROR_DIE>.
+
+=back
+
+=cut
+
 sub getPage {
 	my $self = shift;
 	confess 'Not a static method' unless ref $self eq __PACKAGE__;
@@ -326,7 +540,7 @@ sub getPage {
 	my $spaceKey  = $arg->{spaceKey}  // $self->defaultSpace // croak 'Needs spaceKey or set defaultSpace';
 	my $pageTitle = $arg->{pageTitle} or croak 'Needs pageTitle';
 	
-	$self->resetErr;
+	$self->_resetErr;
 	unless ($self->pageExists($arg)) {
 		$self->errstr("No such page '$pageTitle' in space '$spaceKey'");
 		croak $self->errstr if $ERROR_DIE;
@@ -336,6 +550,19 @@ sub getPage {
 	
 	return $self->call('getPage', $spaceKey, $pageTitle);
 }
+
+=head3 getPages
+
+=over 4
+
+Wrapper for C<getPage(token,space)>. Needs spaceKey.
+
+Returns PageSummary hashes for each page in the given space. If no such space 
+exists, it will error out.
+
+=back
+
+=cut
 
 sub getPages {
 	my $self = shift;
@@ -351,6 +578,22 @@ sub getPages {
 	return $pages || ();
 }
 
+=head3 editPage
+
+=over 4
+
+Needs spaceKey, pageTitle, content. Accepts optional parameters summary, 
+minorEdit.
+
+Attempts to edit an existing page.
+
+Returns the new Page hash on success. If the page doesn't exist, returns 
+undef or dies depending on C<$ERROR_DIE>.
+
+=back
+
+=cut
+
 sub editPage {
 	my $self = shift;
 	confess 'Not a static method' unless ref $self eq __PACKAGE__;
@@ -363,7 +606,7 @@ sub editPage {
 	my $minorEdit = $arg->{minorEdit} // $self->defaultMinor;
 	
 	#if page doesn't exist, you should use createPage() instead
-	$self->resetErr;
+	$self->_resetErr;
 	unless ($self->pageExists(spaceKey => $spaceKey, pageTitle => $pageTitle)) {
 		$self->errstr("Cannot edit page '$pageTitle', does not exist in space '$spaceKey'");
 		croak $self->errstr if $ERROR_DIE;
@@ -389,6 +632,21 @@ sub editPage {
 	return $self->call('updatePage', $page, $pageUpdateOptions);
 }
 
+=head3 createPage
+
+=over 4
+
+Needs spaceKey, pageTitle, content.
+
+Attempts to create a new page.
+
+Returns the new Page hash on success. If the page already exists, returns 
+undef or dies depending on C<$ERROR_DIE>.
+
+=back
+
+=cut
+
 sub createPage {
 	my $self = shift;
 	confess 'Not a static method' unless ref $self eq __PACKAGE__;
@@ -399,7 +657,7 @@ sub createPage {
 	my $content   = $arg->{content}   or croak 'Needs content';
 	
 	#if page already exists, you should use editPage() instead
-	$self->resetErr;
+	$self->_resetErr;
 	if ($self->pageExists($arg)) {
 		$self->errstr("Cannot create page '$pageTitle', already exists in space '$spaceKey'");
 		croak $self->errstr if $ERROR_DIE;
@@ -419,6 +677,17 @@ sub createPage {
 	push($self->{cachedPageTitles}{$spaceKey}, $pageTitle);
 	return $response;
 }
+
+=head3 editOrCreatePage
+
+=over 4
+
+If page exists, calls C<editPage>; if not, calls C<createPage>. Passes through
+arguments unchanged.
+
+=back
+
+=cut
 
 sub editOrCreatePage {
 	my $self = shift;

@@ -1,10 +1,16 @@
 Atlassian-EditConfluence
 
+
+[0.02.01] TBA
+
+	- POD documentation.
+	- Improved test coverage.
+
 [0.02] 1 August 2013
 
-	- Significant testing enhancements
-	- Testing now includes an embedded RPC::XML::Server instance
-	- Build now uses Module::Build instead of ExtUtils::MakeMaker
+	- Significant testing enhancements.
+	- Testing now includes an embedded RPC::XML::Server instance.
+	- Build now uses Module::Build instead of ExtUtils::MakeMaker.
 
 
 [0.01] 30 July 2013
