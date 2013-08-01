@@ -1,8 +1,12 @@
+.gitattributes
+Build.PL
+Changes
 lib/Atlassian/EditConfluence.pm
-Makefile.PL
 MANIFEST
 README
 t/00_compile.t
 t/01_constructor.t
 t/02_encoding.t
 t/10_connect.t
+t/11_local.t
+t/lib/TestServer.pm

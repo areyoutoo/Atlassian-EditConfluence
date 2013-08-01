@@ -1,6 +1,6 @@
 Atlassian-EditConfluence
 
-[0.02] TBA
+[0.02] 1 August 2013
 
 	- Significant testing enhancements
 	- Testing now includes an embedded RPC::XML::Server instance
