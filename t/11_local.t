@@ -14,7 +14,7 @@ sub runTests {
 	require t::lib::TestServer;
 	require Atlassian::EditConfluence;
 	
-	plan tests => 4;
+	plan tests => 5;
 	
 	my $editor;
 	subtest 'constructor' => sub {
@@ -66,5 +66,16 @@ sub runTests {
 		my $newDefaultSpace = 'testspace123';
 		$editor->defaultSpace($newDefaultSpace);
 		is($editor->defaultSpace, $newDefaultSpace, 'set DefaultSpace');
+	};
+	
+	subtest 'getPages' => sub {
+		lives_ok {
+			$editor->getPages(spaceKey=>'space1');
+		} 'getPages spaceKey';
+		
+		lives_ok {
+			$editor->defaultSpace('space2');
+			$editor->getPages();
+		} 'getPages defaultSpace';
 	};
 }

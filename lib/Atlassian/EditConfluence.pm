@@ -573,6 +573,7 @@ sub getPages {
 	
 	#get and cache all pages in this space
 	my $pages = $self->call('getPages', $spaceKey);
+	
 	my @titles = map { $_->{title} } @$pages;
 	$self->{cachedPageTitles}{$spaceKey} = \@titles;
 	return $pages || ();
