@@ -14,7 +14,7 @@ sub runTests {
 	require t::lib::TestServer;
 	require Atlassian::EditConfluence;
 	
-	plan tests => 5;
+	plan tests => 6;
 	
 	my $editor;
 	subtest 'constructor' => sub {
@@ -78,4 +78,14 @@ sub runTests {
 			$editor->getPages();
 		} 'getPages defaultSpace';
 	};
+	
+	subtest 'getPage' => sub {
+		dies_ok {
+			$editor->getPage(spaceKey=>'space2', pageTitle=>'rarity');
+		} 'getPage lc';
+		
+		lives_ok {
+			$editor->getPage(spaceKey=>'space2', pageTitle=>'Rarity');
+		} 'getPage uc';
+	}
 }

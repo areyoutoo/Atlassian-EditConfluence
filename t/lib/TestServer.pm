@@ -11,6 +11,21 @@ use strict;
 use RPC::XML;
 use RPC::XML::Server;
 
+####################
+## IMPOSTER SERVER
+####################
+
+my $server = RPC::XML::Server->new(
+	no_http => 1,
+	fault_table => {
+		badspace => [ 0 => 'Bad space: %s'   ],
+		badtitle => [ 0 => 'Bad title: %s'   ],
+		badtoken => [ 0 => 'Bad token: %s'   ],
+		badlogin => [ 0 => 'Bad credentials' ],
+	},
+);
+
+
 ########################
 ## PRETEND SERVER DATA
 ########################
@@ -92,16 +107,6 @@ _addPage('space2', 'Rarity'   , 'There are very few pages in space2.'   );
 ## TEST SERVER SETUP
 ######################
 
-my $server = RPC::XML::Server->new(
-	no_http => 1,
-	fault_table => {
-		badspace => [ 0 => 'Bad space: %s'   ],
-		badtitle => [ 0 => 'Bad title: %s'   ],
-		badtoken => [ 0 => 'Bad token: %s'   ],
-		badlogin => [ 0 => 'Bad credentials' ],
-	},
-);
-
 $server->add_procedure({
 	name => 'confluence1.login',
 	signature => ['string string string'],
@@ -122,6 +127,12 @@ $server->add_procedure({
 	name => 'confluence1.getPages',
 	signature => ['array string string'],
 	code => \&getPages,
+});
+
+$server->add_procedure({
+	name => 'confluence1.getPage',
+	signature => ['struct string string string'],
+	code => \&getPage,
 });
 
 #This will be statically called during testing, using Atlassian::EditConfluence->new
