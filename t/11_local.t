@@ -19,6 +19,21 @@ sub runTests {
 	my $editor;
 	subtest 'constructor' => sub {
 		lives_ok {
+			Atlassian::EditConfluence->new({
+				username => $t::lib::TestServer::USER,
+				password => $t::lib::TestServer::PASS,
+				url => 'http://localhost:9000',
+				agent => 'TestCoverageBot',
+				defaultSpace => 'nospace',
+				defaultMinor => 'false',
+				defaultSummary => 'Just doing some testing.',
+				specialSend => sub {
+					t::lib::TestServer->dispatch(@_);
+				}
+			});
+		} 'full params';
+		
+		lives_ok {
 			$editor = Atlassian::EditConfluence->new({
 				username => $t::lib::TestServer::USER,
 				password => $t::lib::TestServer::PASS,
@@ -69,6 +84,10 @@ sub runTests {
 	};
 	
 	subtest 'getPages' => sub {
+		dies_ok {
+			$editor->getPages();
+		} 'getPages nospace';
+		
 		lives_ok {
 			$editor->getPages(spaceKey=>'space1');
 		} 'getPages spaceKey';
@@ -77,9 +96,17 @@ sub runTests {
 			$editor->defaultSpace('space2');
 			$editor->getPages();
 		} 'getPages defaultSpace';
+		
+		lives_ok {
+			$editor->getPages(spaceKey=>'emptyspace');
+		} 'getPages emptyspace';
 	};
 	
 	subtest 'getPage' => sub {
+		dies_ok {
+			$editor->getPage();
+		} 'getPage noparams';
+		
 		dies_ok {
 			$editor->getPage(spaceKey=>'space2', pageTitle=>'rarity');
 		} 'getPage lc';

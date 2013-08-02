@@ -4,7 +4,7 @@ Atlassian-EditConfluence
 [0.02.01] TBA
 
 	- POD documentation.
-	- Improved test coverage.
+	- Improved test coverage including login, logout, getPages, getPage.
 
 [0.02] 1 August 2013
 

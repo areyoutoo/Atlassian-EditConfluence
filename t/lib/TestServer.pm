@@ -1,6 +1,6 @@
 package t::lib::TestServer;
 
-our $VERSION = 0.02;;
+our $VERSION = 0.02;
 
 ############
 ## IMPORTS
@@ -38,6 +38,7 @@ our %spaces;
 
 $spaces{'space1'} = {};
 $spaces{'space2'} = {};
+$spaces{'emptyspace'} = {};
 
 sub _addPage {
 	my ($space, $title, $content) = @_;
