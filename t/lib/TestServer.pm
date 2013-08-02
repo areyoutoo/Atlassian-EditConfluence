@@ -2,10 +2,18 @@ package t::lib::TestServer;
 
 our $VERSION = 0.02;;
 
+############
+## IMPORTS
+############
+
 use strict;
 
 use RPC::XML;
 use RPC::XML::Server;
+
+########################
+## PRETEND SERVER DATA
+########################
 
 our $TOKEN = '94a08da1fecbb6e8b46990538c7b50b2';
 our $USER  = 'test';
@@ -13,19 +21,8 @@ our $PASS  = 'secret';
 
 our %spaces;
 
-#populate test spaces
 $spaces{'space1'} = {};
 $spaces{'space2'} = {};
-
-my $server = RPC::XML::Server->new(
-	no_http => 1,
-	fault_table => {
-		badspace => [ 0 => 'Bad space: %s'   ],
-		badtitle => [ 0 => 'Bad title: %s'   ],
-		badtoken => [ 0 => 'Bad token: %s'   ],
-		badlogin => [ 0 => 'Bad credentials' ],
-	},
-);
 
 sub _addPage {
 	my ($space, $title, $content) = @_;
@@ -90,6 +87,21 @@ _addPage('space1', 'Dogs'     , 'A little about dogs.'                  );
 _addPage('space1', 'Test page', 'I wrote a test, once; it was horrible.');
 _addPage('space2', 'Rarity'   , 'There are very few pages in space2.'   );
 
+
+######################
+## TEST SERVER SETUP
+######################
+
+my $server = RPC::XML::Server->new(
+	no_http => 1,
+	fault_table => {
+		badspace => [ 0 => 'Bad space: %s'   ],
+		badtitle => [ 0 => 'Bad title: %s'   ],
+		badtoken => [ 0 => 'Bad token: %s'   ],
+		badlogin => [ 0 => 'Bad credentials' ],
+	},
+);
+
 $server->add_procedure({
 	name => 'confluence1.login',
 	signature => ['string string string'],
@@ -112,6 +124,8 @@ $server->add_procedure({
 	code => \&getPages,
 });
 
+#This will be statically called during testing, using Atlassian::EditConfluence->new
+#with the 'specialSend' parameter set.
 sub dispatch {
 	my $request = shift;
 	if ($request eq __PACKAGE__) { $request = shift; }
